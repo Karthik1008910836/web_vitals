@@ -1,0 +1,15 @@
+{
+  "files": {
+    "main.css": "/web_vitals/static/css/main.5181d2dd.css",
+    "main.js": "/web_vitals/static/js/main.825e1651.js",
+    "static/js/453.fdfc3e1c.chunk.js": "/web_vitals/static/js/453.fdfc3e1c.chunk.js",
+    "index.html": "/web_vitals/index.html",
+    "main.5181d2dd.css.map": "/web_vitals/static/css/main.5181d2dd.css.map",
+    "main.825e1651.js.map": "/web_vitals/static/js/main.825e1651.js.map",
+    "453.fdfc3e1c.chunk.js.map": "/web_vitals/static/js/453.fdfc3e1c.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.5181d2dd.css",
+    "static/js/main.825e1651.js"
+  ]
+}
