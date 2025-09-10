@@ -796,7 +796,7 @@ const WebVitalsDashboard = () => {
             <div style={{ 
               position: 'absolute',
               bottom: '80px',
-              left: '60px',
+              left: '80px',
               right: '60px',
               background: 'rgba(255, 255, 255, 0.95)',
               border: '1px solid #d1d5db',
