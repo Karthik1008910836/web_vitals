@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Calendar, Filter, Download, Camera, ArrowLeft } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import './index.css';
@@ -781,7 +781,6 @@ const WebVitalsDashboard = () => {
                   tick={{ fontSize: 12 }}
                 />
                 <Tooltip content={<CustomTooltip />} />
-                <Legend />
                 <Line 
                   type="monotone" 
                   dataKey="LCP" 
@@ -895,7 +894,6 @@ const WebVitalsDashboard = () => {
                   tick={{ fontSize: 12 }}
                 />
                 <Tooltip content={<CustomTooltip />} />
-                <Legend />
                 <Line 
                   type="monotone" 
                   dataKey="CLS" 
