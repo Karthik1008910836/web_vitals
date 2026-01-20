@@ -1,6 +1,44 @@
-# Getting Started with Create React App
+# Web Vitals Dashboard
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A React-based dashboard for tracking and visualizing web performance metrics, specifically **Largest Contentful Paint (LCP)** and **Cumulative Layout Shift (CLS)**.
+
+## Features
+
+- **CSV Data Import**: Upload performance metrics in CSV format
+- **Interactive Visualizations**: Dual-axis line charts for LCP and CLS over time
+- **Statistical Analysis**: 80th percentile calculations, min/max ranges, last week averages
+- **Release Tracking**: Visual markers for release deployments
+- **Brand Filtering**: Support for multi-brand data tracking
+- **Date Range Filtering**: Filter data by custom date ranges
+- **Data Export**: Export filtered data as CSV or charts as PNG images
+- **Data Persistence**: LocalStorage caching with quota management
+- **Error Handling**: Robust error boundaries and input validation
+
+## CSV Format
+
+The dashboard expects CSV files in the following format:
+
+```csv
+# Brand: BrandName,,,
+date,largestContentfulPaint,cumulativeLayoutShift,Release
+01/01/2024,2500,0.05,v1.0.0
+02/01/2024,2400,0.04,
+```
+
+**Format Details:**
+- **Optional Brand Header**: First line starting with `# Brand:` to specify brand name
+- **Date Format**: DD/MM/YYYY or DD/MM/YYYY H:mm
+- **LCP**: Largest Contentful Paint in milliseconds (integer)
+- **CLS**: Cumulative Layout Shift (decimal, e.g., 0.05)
+- **Release**: Optional release version
+
+## Performance Thresholds
+
+### LCP (Largest Contentful Paint)
+- **Good**: ≤ 2500ms (green) | **Needs Improvement**: 2501-4000ms (yellow) | **Poor**: > 4000ms (red)
+
+### CLS (Cumulative Layout Shift)
+- **Good**: ≤ 0.1 (green) | **Needs Improvement**: 0.1-0.25 (yellow) | **Poor**: > 0.25 (red)
 
 ## Available Scripts
 
@@ -29,42 +67,41 @@ Your app is ready to be deployed!
 
 See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
 
-### `npm run eject`
+### `npm run deploy`
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+Deploys the app to GitHub Pages.
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## Technologies Used
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+- **React 18** - UI framework
+- **Recharts 3.1.2** - Charting library
+- **html2canvas 1.4.1** - Chart export to PNG
+- **Lucide React** - Icon library
+- **Web Vitals** - Performance monitoring
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+## Project Structure
 
-## Learn More
+```
+web_vitals/
+├── public/              # Static files
+├── src/
+│   ├── components/      # Reusable React components
+│   ├── hooks/          # Custom React hooks
+│   ├── utils/          # Utility functions
+│   ├── App.js          # Main application
+│   └── index.js        # Entry point
+└── package.json
+```
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+## Deployment
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+Hosted on **Netlify**: https://ornate-monstera-92b235.netlify.app
 
-### Code Splitting
+## Recent Improvements
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+- ✅ Upgraded to React 18
+- ✅ Added ErrorBoundary for error handling
+- ✅ Implemented localStorage quota management
+- ✅ Created modular utility functions
+- ✅ Added CSV injection protection
+- ✅ Updated PWA branding

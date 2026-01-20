@@ -406,21 +406,13 @@ const WebVitalsDashboard = () => {
 
   const xAxisProps = getXAxisProps(filteredData.length);
 
-  // Calculate dynamic top margin based on number of releases
-  const releases = filteredData.filter(d => d.Release).length;
-  const staggerLevels = releases <= 10 ? 5 : releases <= 20 ? 8 : releases <= 30 ? 10 : 12;
-  const topMargin = Math.max(80, 40 + (staggerLevels * 15) + 30); // baseOffset + (levels * spacing) + padding
-
   // Release marker component
 	const ReleaseMarker = (props) => {
 	  const { cx, cy, payload, index } = props;
 	  if (payload && payload.Release) {
-		// Count total releases and use more stagger levels to prevent overlap
-		const releases = filteredData.filter(d => d.Release).length;
-		const staggerLevels = releases <= 10 ? 5 : releases <= 20 ? 8 : releases <= 30 ? 10 : 12;
-
+		// Position labels much higher above the data points to avoid X-axis overlap
 		const baseOffset = 40; // Increased base offset
-		const labelOffset = baseOffset + (index % staggerLevels) * 15; // Dynamic stagger levels
+		const labelOffset = baseOffset + (index % 3) * 15; // Stagger in 3 levels
 		const yPosition = cy - labelOffset;
 		
 		return (
@@ -772,7 +764,7 @@ const WebVitalsDashboard = () => {
             <ResponsiveContainer width="100%" height="100%">
               <LineChart 
                data={filteredData} 
-               margin={{ top: topMargin, right: 30, left: 20, bottom: xAxisProps.height + 80 }}
+               margin={{ top: 80, right: 30, left: 20, bottom: xAxisProps.height + 80 }}
               >
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis 
@@ -885,7 +877,7 @@ const WebVitalsDashboard = () => {
             <ResponsiveContainer width="100%" height="100%">
               <LineChart 
                data={filteredData} 
-               margin={{ top: topMargin, right: 30, left: 20, bottom: xAxisProps.height + 80 }}
+               margin={{ top: 80, right: 30, left: 20, bottom: xAxisProps.height + 80 }}
               >
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis 

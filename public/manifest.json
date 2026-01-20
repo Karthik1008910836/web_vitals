@@ -1,6 +1,6 @@
 {
-  "short_name": "React App",
-  "name": "Create React App Sample",
+  "short_name": "Web Vitals",
+  "name": "Web Vitals Dashboard",
   "icons": [
     {
       "src": "favicon.ico",
