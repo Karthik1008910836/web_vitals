@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Brush } from 'recharts';
 import { Calendar, Filter, Download, Camera, ArrowLeft } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import * as XLSX from 'xlsx';
@@ -14,6 +14,16 @@ const WebVitalsDashboard = () => {
   const [selectedBrand, setSelectedBrand] = useState('all');
   const [loading, setLoading] = useState(false);
   const [fileUploaded, setFileUploaded] = useState(false);
+
+  // Brush/Zoom state
+  const [brushIndexes, setBrushIndexes] = useState({ startIndex: 0, endIndex: 0 });
+
+  // Initialize brush indexes when filteredData changes
+  useEffect(() => {
+    if (filteredData.length > 0) {
+      setBrushIndexes({ startIndex: 0, endIndex: filteredData.length - 1 });
+    }
+  }, [filteredData.length]);
 
   // Load data from localStorage on component mount
   useEffect(() => {
@@ -666,8 +676,11 @@ const WebVitalsDashboard = () => {
         return;
       }
 
+      // Hide tooltips and brush components
       const tooltips = document.querySelectorAll('.recharts-tooltip-wrapper');
+      const brushes = document.querySelectorAll('.recharts-brush');
       tooltips.forEach(tooltip => tooltip.style.display = 'none');
+      brushes.forEach(brush => brush.style.display = 'none');
 
       await new Promise(resolve => setTimeout(resolve, 500));
 
@@ -691,7 +704,9 @@ const WebVitalsDashboard = () => {
         alert('Chart exported as PNG successfully!');
       }, 'image/png', 1.0);
 
+      // Restore tooltips and brush components
       tooltips.forEach(tooltip => tooltip.style.display = '');
+      brushes.forEach(brush => brush.style.display = '');
 
     } catch (error) {
       console.error('Error exporting chart:', error);
@@ -883,6 +898,14 @@ const WebVitalsDashboard = () => {
             <Camera size={16} />
             Export CLS Chart
           </button>
+
+          <button
+            onClick={() => setBrushIndexes({ startIndex: 0, endIndex: filteredData.length - 1 })}
+            className="btn btn-secondary"
+            title="Reset zoom to show all data"
+          >
+            Reset Zoom
+          </button>
         </div>
       </div>
 
@@ -958,21 +981,34 @@ const WebVitalsDashboard = () => {
                   tick={{ fontSize: 12 }}
                 />
                 <Tooltip content={<CustomTooltip />} />
-                <Line 
-                  type="monotone" 
-                  dataKey="LCP" 
-                  stroke="#2563eb" 
+                <Line
+                  type="monotone"
+                  dataKey="LCP"
+                  stroke="#2563eb"
                   strokeWidth={2}
                   dot={<ReleaseMarker fill="#2563eb" stroke="#1d4ed8" />}
                   activeDot={{ r: 6 }}
                 />
+                <Brush
+                  dataKey="Date"
+                  height={30}
+                  stroke="#3b82f6"
+                  fill="#eff6ff"
+                  startIndex={brushIndexes.startIndex}
+                  endIndex={brushIndexes.endIndex || filteredData.length - 1}
+                  onChange={(brushData) => {
+                    if (brushData && brushData.startIndex !== undefined && brushData.endIndex !== undefined) {
+                      setBrushIndexes({ startIndex: brushData.startIndex, endIndex: brushData.endIndex });
+                    }
+                  }}
+                />
               </LineChart>
             </ResponsiveContainer>
             
-            {/* Overlay Releases Section pushed higher */}
-            <div style={{ 
+            {/* Overlay Releases Section below brush */}
+            <div style={{
               position: 'absolute',
-              bottom: '80px',
+              bottom: '10px',
               left: '80px',
               right: '60px',
               background: 'rgba(255, 255, 255, 0.95)',
@@ -1071,21 +1107,34 @@ const WebVitalsDashboard = () => {
                   tick={{ fontSize: 12 }}
                 />
                 <Tooltip content={<CustomTooltip />} />
-                <Line 
-                  type="monotone" 
-                  dataKey="CLS" 
-                  stroke="#dc2626" 
+                <Line
+                  type="monotone"
+                  dataKey="CLS"
+                  stroke="#dc2626"
                   strokeWidth={2}
                   dot={<ReleaseMarker fill="#dc2626" stroke="#b91c1c" />}
                   activeDot={{ r: 6 }}
                 />
+                <Brush
+                  dataKey="Date"
+                  height={30}
+                  stroke="#dc2626"
+                  fill="#fee2e2"
+                  startIndex={brushIndexes.startIndex}
+                  endIndex={brushIndexes.endIndex || filteredData.length - 1}
+                  onChange={(brushData) => {
+                    if (brushData && brushData.startIndex !== undefined && brushData.endIndex !== undefined) {
+                      setBrushIndexes({ startIndex: brushData.startIndex, endIndex: brushData.endIndex });
+                    }
+                  }}
+                />
               </LineChart>
             </ResponsiveContainer>
             
-            {/* Overlay Releases Section pushed higher */}
-            <div style={{ 
+            {/* Overlay Releases Section below brush */}
+            <div style={{
               position: 'absolute',
-              bottom: '80px',
+              bottom: '10px',
               left: '60px',
               right: '60px',
               background: 'rgba(255, 255, 255, 0.95)',
