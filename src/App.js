@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Calendar, Filter, Download, Camera, ArrowLeft } from 'lucide-react';
 import html2canvas from 'html2canvas';
+import * as XLSX from 'xlsx';
 import './index.css';
 
 const WebVitalsDashboard = () => {
@@ -100,48 +101,101 @@ const WebVitalsDashboard = () => {
     console.log("All cached data cleared. Upload a fresh CSV file.");
   };
 
-  // Enhanced date parsing for DD/MM/YYYY format
+  // Enhanced date parsing for DD/MM/YYYY format, "DD MMM HH am/pm", and "DD-MMM-YY" formats
   const parseDate = (dateString) => {
     if (!dateString) return null;
-    
+
+    // If it's already a Date object (from Excel with cellDates: true), return it
+    if (dateString instanceof Date) {
+      return !isNaN(dateString.getTime()) ? dateString : null;
+    }
+
     const cleanDate = dateString.trim();
-    
+
+    // Month mapping
+    const monthMap = {
+      'jan': 0, 'feb': 1, 'mar': 2, 'apr': 3, 'may': 4, 'jun': 5,
+      'jul': 6, 'aug': 7, 'sep': 8, 'oct': 9, 'nov': 10, 'dec': 11
+    };
+
+    // Handle Excel format: "19-Nov-25" (DD-MMM-YY)
+    const excelFormat = /^(\d{1,2})-([a-z]{3})-(\d{2})$/i;
+    let match = cleanDate.match(excelFormat);
+
+    if (match) {
+      const day = parseInt(match[1]);
+      const monthName = match[2].toLowerCase();
+      const yearShort = parseInt(match[3]);
+
+      const month = monthMap[monthName];
+      // Convert 2-digit year to 4-digit: 25 = 2025, 26 = 2026
+      const year = yearShort >= 0 && yearShort < 50 ? 2000 + yearShort : 1900 + yearShort;
+
+      const date = new Date(year, month, day);
+      if (!isNaN(date.getTime())) {
+        return date;
+      }
+    }
+
+    // Handle CSV format: "19 Nov 12 am" (DD MMM HH am/pm)
+    const csvFormat = /^(\d{1,2})\s+([a-z]{3})\s+(\d{1,2})\s+(am|pm)$/i;
+    match = cleanDate.match(csvFormat);
+
+    if (match) {
+      const day = parseInt(match[1]);
+      const monthName = match[2].toLowerCase();
+      const hour12 = parseInt(match[3]);
+      const ampm = match[4].toLowerCase();
+
+      // Determine year based on month (Nov-Dec 2025, Jan onwards 2026)
+      const month = monthMap[monthName];
+      const year = (month >= 10) ? 2025 : 2026;
+
+      // Convert 12-hour to 24-hour format
+      let hour24 = hour12;
+      if (ampm === 'am' && hour12 === 12) hour24 = 0;
+      else if (ampm === 'pm' && hour12 !== 12) hour24 = hour12 + 12;
+
+      const date = new Date(year, month, day, hour24, 0, 0);
+      if (!isNaN(date.getTime())) {
+        return date;
+      }
+    }
+
     // Handle DD/MM/YYYY H:mm format
     const ddmmyyyyWithTime = /^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{1,2})$/;
-    let match = cleanDate.match(ddmmyyyyWithTime);
-    
+    match = cleanDate.match(ddmmyyyyWithTime);
+
     if (match) {
       const day = parseInt(match[1]);
       const month = parseInt(match[2]) - 1;
       const year = parseInt(match[3]);
       const hour = parseInt(match[4]);
       const minute = parseInt(match[5]);
-      
+
       const date = new Date(year, month, day, hour, minute);
-      if (!isNaN(date.getTime()) && 
-          date.getFullYear() === year && 
-          date.getMonth() === month && 
+      if (!isNaN(date.getTime()) &&
+          date.getFullYear() === year &&
+          date.getMonth() === month &&
           date.getDate() === day) {
-        console.log(`Parsed ${cleanDate} as DD/MM/YYYY: Day=${day}, Month=${month + 1} (${date.toLocaleDateString('en-US', { month: 'long' })}), Year=${year}`);
         return date;
       }
     }
-    
+
     // Handle DD/MM/YYYY format without time
     const ddmmyyyy = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/;
     match = cleanDate.match(ddmmyyyy);
-    
+
     if (match) {
       const day = parseInt(match[1]);
       const month = parseInt(match[2]) - 1;
       const year = parseInt(match[3]);
-      
+
       const date = new Date(year, month, day);
-      if (!isNaN(date.getTime()) && 
-          date.getFullYear() === year && 
-          date.getMonth() === month && 
+      if (!isNaN(date.getTime()) &&
+          date.getFullYear() === year &&
+          date.getMonth() === month &&
           date.getDate() === day) {
-        console.log(`Parsed ${cleanDate} as DD/MM/YYYY: Day=${day}, Month=${month + 1} (${date.toLocaleDateString('en-US', { month: 'long' })}), Year=${year}`);
         return date;
       }
     }
@@ -159,10 +213,32 @@ const WebVitalsDashboard = () => {
     return `${day}/${month}/${year}`;
   };
 
-  // Handle file upload
+  // Handle file upload (CSV or Excel)
   const handleFileUpload = (event) => {
     const file = event.target.files[0];
-    if (file && file.type === 'text/csv') {
+    if (!file) return;
+
+    const fileName = file.name.toLowerCase();
+    const isExcel = fileName.endsWith('.xlsx') || fileName.endsWith('.xls');
+    const isCSV = fileName.endsWith('.csv') || file.type === 'text/csv';
+
+    if (isExcel) {
+      setLoading(true);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: 'array', cellDates: true });
+          const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+          const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1, raw: false, defval: '' });
+          parseExcelData(jsonData);
+        } catch (error) {
+          alert('Error reading Excel file: ' + error.message);
+          setLoading(false);
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    } else if (isCSV) {
       setLoading(true);
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -171,7 +247,7 @@ const WebVitalsDashboard = () => {
       };
       reader.readAsText(file);
     } else {
-      alert('Please select a CSV file');
+      alert('Please select a CSV or Excel file (.csv, .xlsx, .xls)');
     }
   };
 
@@ -205,22 +281,23 @@ const WebVitalsDashboard = () => {
       // Parse data starting from the line after the header
       const parsedData = lines.slice(headerLineIndex + 1).map((line) => {
         if (line.trim() === '' || line.trim().startsWith('#')) return null;
-        
+
         const values = line.split(',');
         const dateString = values[0]?.trim();
         const parsedDate = parseDate(dateString);
-        
+
         if (!parsedDate) {
           console.warn(`Skipping row with invalid date: ${dateString}`);
           return null;
         }
-        
+
+        // New CSV format: date is column 0, LCP is column 10, CLS is column 12
         return {
           Date: formatDateForDisplay(parsedDate),
           OriginalDate: dateString,
-          LCP: parseInt(values[1]),
-          CLS: parseFloat(values[2]),
-          Release: values[3]?.trim() || null,
+          LCP: parseInt(values[10]),  // Changed from values[1] to values[10]
+          CLS: parseFloat(values[12]), // Changed from values[2] to values[12]
+          Release: null,  // No release column in new format
           BrandName: brandName,
           dateObj: parsedDate
         };
@@ -265,6 +342,98 @@ const WebVitalsDashboard = () => {
     } catch (error) {
       console.error('Error parsing CSV:', error);
       alert('Error parsing CSV file. Please check the format.');
+      setLoading(false);
+    }
+  };
+
+  // Parse Excel data (from xlsx library)
+  const parseExcelData = (jsonData) => {
+    try {
+      console.log('Excel parsing started. Total rows:', jsonData.length);
+      console.log('First 3 rows:', jsonData.slice(0, 3));
+
+      if (jsonData.length < 2) {
+        alert('Excel file appears to be empty');
+        setLoading(false);
+        return;
+      }
+
+      // First row is header, skip it
+      const dataRows = jsonData.slice(1);
+      console.log('Data rows (after skipping header):', dataRows.length);
+
+      // Get brand from first row (column 4) if it exists
+      let brandName = dataRows[0]?.[4]?.trim() || null;
+      console.log('Brand name:', brandName);
+
+      const parsedData = dataRows.map((row, index) => {
+        if (!row || row.length === 0) return null;
+
+        const dateString = row[0]?.toString().trim();
+        console.log(`Row ${index}: date="${dateString}", LCP="${row[1]}", CLS="${row[2]}", Release="${row[3]}"`);
+
+        const parsedDate = parseDate(dateString);
+
+        if (!parsedDate) {
+          console.warn(`Skipping row ${index} with invalid date: ${dateString}`);
+          return null;
+        }
+
+        const lcpValue = parseInt(row[1]);
+        const clsValue = parseFloat(row[2]);
+
+        console.log(`Row ${index} parsed: LCP=${lcpValue}, CLS=${clsValue}, isNaN(LCP)=${isNaN(lcpValue)}, isNaN(CLS)=${isNaN(clsValue)}`);
+
+        return {
+          Date: formatDateForDisplay(parsedDate),
+          OriginalDate: dateString,
+          LCP: lcpValue,
+          CLS: clsValue,
+          Release: row[3]?.toString().trim() || null,
+          BrandName: brandName,
+          dateObj: parsedDate
+        };
+      }).filter(row => row && !isNaN(row.LCP) && !isNaN(row.CLS));
+
+      console.log('Parsed data count after filter:', parsedData.length);
+      console.log('Sample parsed data:', parsedData.slice(0, 3));
+
+      if (parsedData.length === 0) {
+        alert('No valid data found. Please check your Excel format.');
+        setLoading(false);
+        return;
+      }
+
+      parsedData.sort((a, b) => a.dateObj - b.dateObj);
+
+      setCsvData(parsedData);
+      setFilteredData(parsedData);
+
+      const brands = [...new Set(parsedData.map(item => item.BrandName).filter(Boolean))];
+      if (brands.length === 1) {
+        setSelectedBrand(brands[0]);
+      }
+
+      if (parsedData.length > 0) {
+        const firstDate = parsedData[0].dateObj;
+        const lastDate = parsedData[parsedData.length - 1].dateObj;
+
+        const startDateStr = firstDate.toISOString().split('T')[0];
+        const endDateStr = lastDate.toISOString().split('T')[0];
+
+        setStartDate(startDateStr);
+        setEndDate(endDateStr);
+      }
+
+      setLoading(false);
+      setFileUploaded(true);
+
+      const dateRange = `${parsedData[0].Date} to ${parsedData[parsedData.length - 1].Date}`;
+      alert(`Successfully loaded ${parsedData.length} data points from Excel!\nBrand: ${brandName || 'Not specified'}\nDate range: ${dateRange}`);
+
+    } catch (error) {
+      console.error('Error parsing Excel:', error);
+      alert('Error parsing Excel file: ' + error.message);
       setLoading(false);
     }
   };
@@ -535,11 +704,11 @@ const WebVitalsDashboard = () => {
       <div className="loading">
         <div className="upload-section">
           <h1>Web Vitals Dashboard</h1>
-          <p>Upload your CSV file to start analyzing Web Vitals data</p>
+          <p>Upload your CSV or Excel file to start analyzing Web Vitals data</p>
           <div className="upload-area">
             <input
               type="file"
-              accept=".csv"
+              accept=".csv,.xlsx,.xls"
               onChange={handleFileUpload}
               style={{
                 display: 'block',
